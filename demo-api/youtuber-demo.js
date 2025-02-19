@@ -60,7 +60,7 @@ app.use(express.json());
 app.post("/youtubers", (req, res) => {
   if (req.body.channelTitle) {
     db.set(id++, req.body);
-    res.json({
+    res.status(201).json({
       message: `${db.get(id - 1).channelTitle} 님, 가입해주셔서 감사합니다.`,
     });
   } else {
