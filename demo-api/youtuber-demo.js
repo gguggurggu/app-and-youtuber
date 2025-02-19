@@ -26,13 +26,18 @@ db.set(id++, youTuberB);
 db.set(id++, youTuberC);
 
 // 전체 조회
-var youtubers = {};
-
 app.get("/youtubers", (req, res) => {
-  db.forEach((value, key) => {
-    youtubers[key] = value;
-  });
-  res.json(youtubers);
+  var youtubers = {};
+
+  if (db.size !== 0) {
+    db.forEach((value, key) => {
+      youtubers[key] = value;
+    });
+
+    res.json(youtubers);
+  } else {
+    res.status(404).json({ message: "조회할 유튜버가 없습니다." });
+  }
 });
 
 // 개별 조회
@@ -41,22 +46,28 @@ app.get("/youtubers/:id", function (req, res) {
   id = parseInt(id);
   const youtuber = db.get(id);
 
-  if (youtuber === undefined) {
-    res.json({
+  if (youtuber) {
+    res.json(youtuber);
+  } else {
+    res.status(404).json({
       message: "유튜버 정보를 찾을 수 없습니다.",
     });
-  } else {
-    res.json(youtuber);
   }
 });
 
 // 등록
 app.use(express.json());
 app.post("/youtubers", (req, res) => {
-  db.set(id++, req.body);
-  res.json({
-    message: `${db.get(id - 1).channelTitle} 님, 가입해주셔서 감사합니다.`,
-  });
+  if (req.body.channelTitle) {
+    db.set(id++, req.body);
+    res.json({
+      message: `${db.get(id - 1).channelTitle} 님, 가입해주셔서 감사합니다.`,
+    });
+  } else {
+    res.status(400).json({
+      message: "채널명을 입력해주세요.",
+    });
+  }
 });
 
 // 개별 삭제
@@ -65,16 +76,15 @@ app.delete("/youtubers/:id", (req, res) => {
   id = parseInt(id);
   const youtuber = db.get(id);
 
-  if (youtuber === undefined) {
-    res.json({
-      message: `${id}로 가입된 정보가 없습니다.`,
-    });
-  } else {
-    db.delete(id);
-
+  if (youtuber) {
     const channelTitle = youtuber.channelTitle;
+    db.delete(id);
     res.json({
       message: `${channelTitle} 님, 또 찾아주세요.`,
+    });
+  } else {
+    res.status(404).json({
+      message: `${id}로 가입된 정보가 없습니다.`,
     });
   }
 });
@@ -87,6 +97,7 @@ app.delete("/youtubers", (req, res) => {
     db.clear();
     msg = "전체 유튜버가 삭제되었습니다.";
   } else if (db.size === 0) {
+    res.status(404);
     msg = "삭제할 유튜버가 없습니다.";
   }
 
@@ -101,13 +112,13 @@ app.put("/youtubers/:id", (req, res) => {
   id = parseInt(id);
 
   var youtuber = db.get(id);
-  var oldChannelTitle = youtuber.channelTitle;
 
-  if (youtuber === undefined) {
-    res.json({
+  if (!youtuber) {
+    return res.status(404).json({
       message: `${id}로 가입된 정보가 없습니다.`,
     });
   } else {
+    var oldChannelTitle = youtuber.channelTitle;
     var newChannelTitle = req.body.channelTitle;
 
     youtuber.channelTitle = newChannelTitle;
